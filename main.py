@@ -37,8 +37,10 @@ class Redditor(db.Model):
     
   @classmethod
   def get(cls, userID, password):
-    return Redditor.gql('where userID = :1 and password = :2', 
-      userID, Redditor.hashPass(password)).get()
+    redditor = Redditor.get_by_key_name(userID)
+    if((redditor == None) or (redditor.password != Redditor.hashPass(password))):
+      return None
+    return redditor
     
 class Bookmark(db.Model):
   creator = db.ReferenceProperty(Redditor)
@@ -67,7 +69,7 @@ class RetrieveBookmarks(webapp.RequestHandler):
     if self.request.get('jsonp'):
       out.write('%s(' % self.request.get('jsonp'))
     if self.request.get('u') and self.request.get('p'):
-      self.response.headers.add_header('Content-type', 'application/json')
+      self.response.headers['Content-type'] = 'application/json'
       creator = Redditor.get(self.request.get('u'), self.request.get('p'))
       if not creator:
         out.write('[]')
@@ -82,7 +84,7 @@ class RetrieveBookmarks(webapp.RequestHandler):
       bookmarks.order("-addedOn")
       if self.request.get('pg'):
         bookmarks.filter("page", self.request.get('pg'))
-        results = bookmarks.fetch(100) #Limit the number of bookmarks we'll bother to tag as unsave-able to 100
+        results = bookmarks.fetch(10) #Limit the number of bookmarks we'll bother to tag as unsave-able to 10
       else:
         results = bookmarks.fetch(10, offset)
       if len(results) > 0:
@@ -107,7 +109,7 @@ class AddBookmark(webapp.RequestHandler):
       self.response.set_status(400)
       return
       
-    link = self.request.get('l')
+    link = self.request.get('l').strip()
     commentLinkRegex = re.compile("/r/[^/]+/comments/([a-z0-9]+)/(?:[^/]+/)?([a-z0-9]+)$")
     commentInfo = commentLinkRegex.search(link)
     if not commentInfo:
@@ -171,7 +173,7 @@ def main():
                                                         ('/unsave', RemoveBookmark),
                                                         ('/printsource', PrintSelf)
                                                         ],
-                                       debug=True)
+                                       debug=True )
   util.run_wsgi_app(application)
 
 
