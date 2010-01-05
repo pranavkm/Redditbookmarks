@@ -121,7 +121,7 @@ class AddBookmark(webapp.RequestHandler):
     
     creator = Redditor.get(self.request.get('u'), self.request.get('p'))
     if not creator:
-      creator = Redditor(userID=self.request.get('u'), password=Redditor.hashPass(self.request.get('p')))
+      creator = Redditor(key_name = self.request.get('u'), userID=self.request.get('u'), password=Redditor.hashPass(self.request.get('p')))
       creator.put()
     
     Bookmark(creator=creator,
